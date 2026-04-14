@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    /* Luxury Palette: Warm Creams, Soft Golds, Deep Charcoals */
+    --background: 40 33% 98%; /* Warm cream */
+    --foreground: 220 10% 15%; /* Deep charcoal */
+    
+    --card: 0 0% 100%;
+    --card-foreground: 220 10% 15%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 10% 15%;
+    
+    --primary: 43 74% 45%; /* Soft gold / brass */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 40 10% 90%;
+    --secondary-foreground: 220 10% 15%;
+    
+    --muted: 40 20% 93%;
+    --muted-foreground: 220 5% 45%;
+    
+    --accent: 40 33% 95%;
+    --accent-foreground: 43 74% 45%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --border: 40 15% 85%;
+    --input: 40 15% 85%;
+    --ring: 43 74% 45%;
+    
+    --radius: 0.3rem; /* Elegant sharper corners */
+
+    /* Typography Tokens - Replaced Arial with Roboto */
+    --font-serif: 'Roboto', sans-serif;
+    --font-sans: 'Roboto', sans-serif;
+    --font-serif-weight: 700;
+  }
+
+  .dark {
+    --background: 220 10% 10%;
+    --foreground: 40 33% 95%;
+    
+    --card: 220 10% 13%;
+    --card-foreground: 40 33% 95%;
+    
+    --popover: 220 10% 13%;
+    --popover-foreground: 40 33% 95%;
+    
+    --primary: 43 74% 55%;
+    --primary-foreground: 220 10% 10%;
+    
+    --secondary: 220 10% 18%;
+    --secondary-foreground: 40 33% 95%;
+    
+    --muted: 220 10% 15%;
+    --muted-foreground: 220 5% 65%;
+    
+    --accent: 220 10% 15%;
+    --accent-foreground: 43 74% 55%;
+    
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --border: 220 10% 20%;
+    --input: 220 10% 20%;
+    --ring: 43 74% 55%;
+  }
+}
+
+@layer base {
+  html, body {
+    @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
+    font-family: 'Roboto', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Roboto', sans-serif;
+    font-weight: var(--font-serif-weight);
+    letter-spacing: -0.01em;
+  }
+
+  p, span, button, input, textarea, select, label {
+    font-family: 'Roboto', sans-serif;
+  }
+}
+
+.luxury-shadow {
+  box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.dark .luxury-shadow {
+  box-shadow: 0 10px 40px -10px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.premium-card {
+  @apply bg-card text-card-foreground border border-border/50 rounded-xl luxury-shadow transition-all duration-300;
+}
