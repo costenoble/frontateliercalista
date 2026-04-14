@@ -10,7 +10,7 @@ const CollectionPointForm = ({ initialData, onSubmit, onCancel, isLoading }) => 
   const [formData, setFormData] = useState({
     name: '',
     address: '',
-    location_type: 'pickup'
+    location_type: 'atelier'
   });
 
   useEffect(() => {
@@ -18,13 +18,13 @@ const CollectionPointForm = ({ initialData, onSubmit, onCancel, isLoading }) => 
       setFormData({
         name: initialData.name || '',
         address: initialData.address || '',
-        location_type: initialData.location_type || 'pickup'
+        location_type: initialData.location_type || 'atelier'
       });
     } else {
       setFormData({
         name: '',
         address: '',
-        location_type: 'pickup'
+        location_type: 'atelier'
       });
     }
   }, [initialData]);
@@ -78,9 +78,8 @@ const CollectionPointForm = ({ initialData, onSubmit, onCancel, isLoading }) => 
             <SelectValue placeholder="Sélectionnez un type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="pickup">Point de retrait (Pickup)</SelectItem>
-            <SelectItem value="delivery">Livraison (Delivery)</SelectItem>
-            <SelectItem value="store">Boutique</SelectItem>
+            <SelectItem value="atelier">Atelier</SelectItem>
+            <SelectItem value="bureau">Bureau</SelectItem>
           </SelectContent>
         </Select>
       </div>

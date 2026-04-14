@@ -36,7 +36,7 @@ const AdminDashboard = () => {
   const [articles, setArticles] = useState([]);
   
   const [newAvailability, setNewAvailability] = useState({
-    collection_point_id: '',
+    location: '',
     day_of_week: 'Lundi',
     start_time: '',
     end_time: ''
@@ -69,6 +69,16 @@ const AdminDashboard = () => {
   const [isCollectionPointModalOpen, setIsCollectionPointModalOpen] = useState(false);
   const [editingCollectionPoint, setEditingCollectionPoint] = useState(null);
 
+  const normalizeAvailability = (availability, pointsByName) => {
+    const pointName = availability.location || 'Point de collecte';
+
+    return {
+      ...availability,
+      point_name: pointName,
+      point_address: pointsByName[pointName]?.address || '',
+    };
+  };
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/admin/login');
@@ -89,22 +99,22 @@ const AdminDashboard = () => {
 
       const { data: availabilitiesData, error: availabilitiesError } = await supabase
         .from('availabilities')
-        .select(`
-          *,
-          collection_points (
-            id,
-            name
-          )
-        `)
+        .select('*')
         .order('day_of_week')
         .order('start_time');
       if (availabilitiesError) throw availabilitiesError;
-      const sortedAvailabilities = availabilitiesData.sort((a, b) => {
+
+      const pointsByName = Object.fromEntries((pointsData || []).map((point) => [point.name, point]));
+      const normalizedAvailabilities = (availabilitiesData || []).map((availability) =>
+        normalizeAvailability(availability, pointsByName)
+      );
+
+      const sortedAvailabilities = normalizedAvailabilities.sort((a, b) => {
         const dayDiff = DAYS_OF_WEEK.indexOf(a.day_of_week) - DAYS_OF_WEEK.indexOf(b.day_of_week);
         if (dayDiff !== 0) return dayDiff;
 
-        const pointA = a.collection_points?.name || '';
-        const pointB = b.collection_points?.name || '';
+        const pointA = a.point_name || '';
+        const pointB = b.point_name || '';
         return pointA.localeCompare(pointB);
       });
       setAvailabilities(sortedAvailabilities);
@@ -164,7 +174,7 @@ const AdminDashboard = () => {
   };
 
   const handleAddAvailability = async () => {
-      if (!newAvailability.collection_point_id || !newAvailability.day_of_week || !newAvailability.start_time || !newAvailability.end_time) {
+      if (!newAvailability.location || !newAvailability.day_of_week || !newAvailability.start_time || !newAvailability.end_time) {
           toast({ variant: "destructive", title: "Champs requis", description: "Tous les champs sont obligatoires." });
           return;
       }
@@ -178,7 +188,7 @@ const AdminDashboard = () => {
       } else {
           toast({ title: "Succès", description: "Nouvelle disponibilité ajoutée." });
           fetchData();
-          setNewAvailability({ collection_point_id: '', day_of_week: 'Lundi', start_time: '', end_time: '' });
+          setNewAvailability({ location: '', day_of_week: 'Lundi', start_time: '', end_time: '' });
       }
       setIsAdding(false);
   };
@@ -316,7 +326,7 @@ const AdminDashboard = () => {
   }, {});
 
   const groupedAvailabilities = availabilities.reduce((acc, availability) => {
-    const pointName = availability.collection_points?.name || 'Point de collecte';
+    const pointName = availability.point_name || availability.location || 'Point de collecte';
     if (!acc[pointName]) acc[pointName] = [];
     acc[pointName].push(availability);
     return acc;
@@ -392,15 +402,15 @@ const AdminDashboard = () => {
           <div className="md:col-span-2">
             <label className="text-sm font-medium text-gray-700 mb-1.5 block">Point de collecte</label>
             <Select
-              value={newAvailability.collection_point_id}
-              onValueChange={(value) => setNewAvailability((prev) => ({ ...prev, collection_point_id: value }))}
+              value={newAvailability.location}
+              onValueChange={(value) => setNewAvailability((prev) => ({ ...prev, location: value }))}
             >
               <SelectTrigger className="h-10">
                 <SelectValue placeholder="Choisir un point" />
               </SelectTrigger>
               <SelectContent>
                 {collectionPoints.map((point) => (
-                  <SelectItem key={point.id} value={point.id}>
+                  <SelectItem key={point.id} value={point.name}>
                     {point.name}
                   </SelectItem>
                 ))}
@@ -470,6 +480,7 @@ const AdminDashboard = () => {
                         <span className="font-medium">{availability.day_of_week}</span>
                         {' · '}
                         {availability.start_time?.slice(0, 5)} - {availability.end_time?.slice(0, 5)}
+                        {availability.point_address ? ` · ${availability.point_address}` : ''}
                       </div>
                       <Button
                         variant="outline"

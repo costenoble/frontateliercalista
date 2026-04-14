@@ -14,25 +14,26 @@ const AvailabilityCalendar = () => {
     useEffect(() => {
         const fetchAvailabilities = async () => {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('availabilities')
-                .select(`
-                  id,
-                  day_of_week,
-                  start_time,
-                  end_time,
-                  collection_points (
-                    name,
-                    address
-                  )
-                `)
-                .order('day_of_week')
-                .order('start_time');
-            
-            if (!error && data) {
+            const [{ data, error }, { data: pointsData, error: pointsError }] = await Promise.all([
+                supabase
+                    .from('availabilities')
+                    .select('id, day_of_week, start_time, end_time, location')
+                    .order('day_of_week')
+                    .order('start_time'),
+                supabase
+                    .from('collection_points')
+                    .select('name, address')
+                    .order('name')
+            ]);
+
+            if (!error && !pointsError && data) {
+                const pointsByName = Object.fromEntries(
+                    (pointsData || []).map((point) => [point.name, point.address || ''])
+                );
+
                 const groupedData = data.reduce((acc, curr) => {
-                    const pointName = curr.collection_points?.name || 'Point de collecte';
-                    const pointAddress = curr.collection_points?.address || '';
+                    const pointName = curr.location || 'Point de collecte';
+                    const pointAddress = pointsByName[pointName] || '';
                     const { day_of_week, start_time, end_time } = curr;
 
                     if (!acc[pointName]) {

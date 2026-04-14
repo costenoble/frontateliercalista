@@ -1,7 +1,0 @@
-project_id = "atelier-calista-rebuild"
-
-[functions.create-product]
-verify_jwt = true
-
-[functions.create-checkout-session]
-verify_jwt = false
