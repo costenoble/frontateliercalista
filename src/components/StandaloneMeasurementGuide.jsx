@@ -1,8 +1,8 @@
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Ruler, MoveHorizontal, AlertCircle } from 'lucide-react';
+import { Ruler, MoveHorizontal, MoveVertical, AlertCircle } from 'lucide-react';
 
 const guidesData = {
   raccourcir: {
@@ -26,6 +26,17 @@ const guidesData = {
       "Mesurez la largeur totale de tissu à retirer (somme des deux côtés)."
     ],
     tip: "Assurez-vous de pouvoir bouger et vous asseoir confortablement. Le vêtement doit être ajusté, pas serré."
+  },
+  ajuster: {
+    title: "Mesurer pour ajuster une taille",
+    icon: <MoveVertical className="w-8 h-8 text-amber-500" />,
+    instructions: [
+      "Enfilez le vêtement et placez-le à la hauteur où vous le portez normalement.",
+      "Pincez l'excédent à la taille jusqu'à obtenir le confort souhaité, sans bloquer votre respiration.",
+      "Mesurez la quantité totale de tissu à retirer sur le tour de taille.",
+      "Ajoutez une photo portée si possible, avec la zone à reprendre bien visible."
+    ],
+    tip: "Si vous hésitez entre deux valeurs, indiquez la plus confortable. Une retouche trop serrée est plus difficile à corriger."
   },
   elargir: {
     title: "Mesurer pour élargir un vêtement",
@@ -64,20 +75,20 @@ const StandaloneMeasurementGuide = React.memo(() => {
         initial="hidden"
         animate="visible"
         exit="exit"
-        className="mt-6 mb-4 p-6 bg-gray-50 rounded-xl border border-gray-200/80"
+        className="mt-6 mb-2 p-5 bg-muted/[0.04] rounded-xl border border-border/70"
       >
         <div className="flex items-center mb-4">
           <div className="mr-4 bg-white p-3 rounded-full shadow-sm">
             {guide.icon}
           </div>
-          <h3 className="text-xl font-semibold text-gray-800">{guide.title}</h3>
+          <h3 className="text-xl font-[var(--font-serif)] text-foreground">{guide.title}</h3>
         </div>
-        <ul className="space-y-2 list-disc list-inside text-gray-700 mb-4">
+        <ul className="space-y-2 list-disc list-inside text-muted-foreground mb-4 text-sm leading-relaxed">
           {guide.instructions.map((step, i) => <li key={i}>{step}</li>)}
         </ul>
-        <div className="flex items-start p-3 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
-          <AlertCircle className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-blue-800">{guide.tip}</p>
+        <div className="flex items-start p-3 bg-primary/10 border-l-4 border-primary/50 rounded-r-lg">
+          <AlertCircle className="w-5 h-5 text-primary mr-3 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-foreground/80">{guide.tip}</p>
         </div>
       </motion.div>
     );
@@ -88,11 +99,11 @@ const StandaloneMeasurementGuide = React.memo(() => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.7, duration: 0.8 }}
-      className="mt-12 p-8 bg-white rounded-2xl shadow-lg border border-gray-100"
+      className="p-6 md:p-8 bg-card rounded-2xl shadow-lg border border-border/60"
     >
-      <h2 className="text-3xl font-light text-gray-900 mb-6 text-center">Comment prendre vos mesures ?</h2>
-      <p className="text-center text-gray-600 mb-8">
-        Sélectionnez une catégorie pour afficher notre guide pas-à-pas.
+      <h2 className="text-2xl md:text-3xl font-[var(--font-serif)] text-foreground mb-3 text-center">Comment mesurer sa taille ?</h2>
+      <p className="text-center text-muted-foreground mb-6 text-sm md:text-base">
+        Quelques repères simples avant de choisir un cintrage, un ajustement ou une longueur.
       </p>
       <div className="flex flex-wrap justify-center gap-4">
         <Button 
@@ -108,6 +119,13 @@ const StandaloneMeasurementGuide = React.memo(() => {
             className="rounded-full"
         >
             Cintrer
+        </Button>
+        <Button 
+            variant={activeGuide === 'ajuster' ? 'default' : 'outline'} 
+            onClick={() => toggleGuide('ajuster')}
+            className="rounded-full"
+        >
+            Ajuster
         </Button>
         <Button 
             variant={activeGuide === 'elargir' ? 'default' : 'outline'} 

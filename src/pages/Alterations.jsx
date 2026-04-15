@@ -1,16 +1,17 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAlterationCart } from '@/hooks/useAlterationCart';
+import StandaloneMeasurementGuide from '@/components/StandaloneMeasurementGuide';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Building2, Check, Home, Loader2, Wrench, Scissors, ChevronRight, UploadCloud, Image as ImageIcon, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, Building2, Check, Home, Loader2, MapPin, Search, Wrench, Scissors, ChevronRight, UploadCloud, Image as ImageIcon, ShoppingCart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchAlterationCatalog, filterCatalogByType } from '@/services/backendApi';
 
@@ -23,6 +24,7 @@ const Alterations = () => {
   const [step, setStep] = useState(1);
   const [selectedLocationType, setSelectedLocationType] = useState('');
   const [selectedCollectionPointId, setSelectedCollectionPointId] = useState('');
+  const [locationSearch, setLocationSearch] = useState('');
   const [serviceType, setServiceType] = useState('');
   
   // Selection Data
@@ -103,25 +105,39 @@ const Alterations = () => {
     {
       value: 'atelier',
       label: 'Atelier',
-      description: 'Déposez votre pièce directement auprès de l’atelier.',
+      description: 'Pour un dépôt directement auprès de l’atelier.',
       icon: Home
     },
     {
       value: 'bureau',
       label: 'Entreprise',
-      description: 'Passez par un point de collecte partenaire en entreprise.',
+      description: 'Pour un dépôt dans une entreprise partenaire.',
       icon: Building2
     }
   ];
 
-  const getCollectionPointForType = (locationType) => (
-    collectionPoints.find((point) => point.location_type === locationType)
+  const getCollectionPointsForType = (locationType) => (
+    collectionPoints.filter((point) => point.location_type === locationType)
   );
 
-  const handleLocationTypeSelect = (locationType) => {
-    const point = getCollectionPointForType(locationType);
+  const getCollectionPointCountForType = (locationType) => (
+    getCollectionPointsForType(locationType).length
+  );
 
-    if (!point) {
+  const filteredCollectionPoints = useMemo(() => {
+    if (!selectedLocationType) return [];
+
+    const search = locationSearch.trim().toLowerCase();
+    return getCollectionPointsForType(selectedLocationType).filter((point) => {
+      if (!search) return true;
+      return `${point.name} ${point.address || ''}`.toLowerCase().includes(search);
+    });
+  }, [collectionPoints, selectedLocationType, locationSearch]);
+
+  const handleLocationTypeSelect = (locationType) => {
+    const points = getCollectionPointsForType(locationType);
+
+    if (points.length === 0) {
       toast({
         variant: 'destructive',
         title: 'Aucun point disponible',
@@ -131,13 +147,19 @@ const Alterations = () => {
     }
 
     setSelectedLocationType(locationType);
-    setSelectedCollectionPointId(point.id);
+    setSelectedCollectionPointId('');
+    setLocationSearch('');
     setTimeout(() => setStep(2), 300);
+  };
+
+  const handleCollectionPointSelect = (pointId) => {
+    setSelectedCollectionPointId(pointId);
+    setTimeout(() => setStep(3), 250);
   };
 
   const handleServiceSelect = (selectedService) => {
     setServiceType(selectedService);
-    setTimeout(() => setStep(3), 300);
+    setTimeout(() => setStep(4), 300);
   };
 
   const handleCategorySelect = (categoryId) => {
@@ -177,7 +199,7 @@ const Alterations = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleGoToStep4 = () => {
+  const handleGoToContactStep = () => {
     if (selectedArticles.length === 0) {
       toast({
         variant: 'destructive',
@@ -198,7 +220,7 @@ const Alterations = () => {
       }
     }
     
-    setStep(4);
+    setStep(5);
   };
 
   const handleBack = () => {
@@ -242,6 +264,7 @@ const Alterations = () => {
       setStep(1);
       setSelectedLocationType('');
       setSelectedCollectionPointId('');
+      setLocationSearch('');
       setServiceType('');
       setSelectedCategoryId('');
       setSelectedArticles([]);
@@ -289,11 +312,11 @@ const Alterations = () => {
         <meta name="description" content="Réservez vos réparations et ajustements avec l'élégance de l'Atelier Calista." />
       </Helmet>
 
-      <div className="min-h-screen bg-background py-16 px-4 sm:px-6 flex flex-col items-center">
+      <div className="min-h-screen bg-background py-10 md:py-14 px-4 sm:px-6 flex flex-col items-center">
         
-        <div className="w-full max-w-4xl premium-card p-8 md:p-14">
+        <div className="w-full max-w-4xl premium-card p-6 md:p-10">
           
-          <div className="flex items-center mb-12 relative">
+          <div className="flex items-center mb-8 relative">
             {step > 1 && (
               <Button 
                 variant="ghost" 
@@ -307,22 +330,23 @@ const Alterations = () => {
             <div className="w-full text-center px-12">
               <h1 className="text-lg md:text-xl lg:text-2xl font-[var(--font-serif)] font-[var(--font-serif-weight)] text-foreground leading-tight tracking-[0.02em]">
                 {step === 1 && 'Choisissez votre mode de dépôt'}
-                {step === 2 && 'De quel service avez-vous besoin ?'}
-                {step === 3 && 'Sélectionnez vos articles'}
-                {step === 4 && 'Vos coordonnées'}
+                {step === 2 && 'Choisissez votre lieu de dépôt'}
+                {step === 3 && 'De quel service avez-vous besoin ?'}
+                {step === 4 && 'Sélectionnez vos articles'}
+                {step === 5 && 'Vos coordonnées'}
               </h1>
-              <div className="flex items-center justify-center space-x-2 mt-6">
+              <div className="flex items-center justify-center space-x-2 mt-4">
                 <span className="h-px w-8 bg-primary/40"></span>
                 <p className="text-xs tracking-[0.3em] uppercase text-muted-foreground font-light">
-                  Étape {step} sur 4
+                  Étape {step} sur 5
                 </p>
                 <span className="h-px w-8 bg-primary/40"></span>
               </div>
             </div>
           </div>
 
-          <div className="flex space-x-2 mb-16 max-w-xs mx-auto">
-            {[1, 2, 3, 4].map((s) => (
+          <div className="flex space-x-2 mb-10 max-w-sm mx-auto">
+            {[1, 2, 3, 4, 5].map((s) => (
               <div 
                 key={s} 
                 className={`h-[2px] flex-1 transition-all duration-700 ${
@@ -332,7 +356,7 @@ const Alterations = () => {
             ))}
           </div>
 
-          <div className="min-h-[420px]">
+          <div className="min-h-[340px]">
             <AnimatePresence mode="wait">
               {step === 1 && (
                 <motion.div 
@@ -341,30 +365,30 @@ const Alterations = () => {
                   initial="initial" 
                   animate="animate" 
                   exit="exit"
-                  className="grid grid-cols-1 sm:grid-cols-2 gap-6"
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-5"
                 >
                   {locationTypeOptions.map((option) => {
                     const Icon = option.icon;
-                    const point = getCollectionPointForType(option.value);
+                    const pointCount = getCollectionPointCountForType(option.value);
                     const isSelected = selectedLocationType === option.value;
 
                     return (
                       <button
                         key={option.value}
                         onClick={() => handleLocationTypeSelect(option.value)}
-                        className={`flex flex-col items-center justify-center p-10 text-center rounded-2xl border-2 transition-all duration-500 group relative overflow-hidden
+                        className={`flex flex-col items-center justify-center p-7 md:p-8 text-center rounded-2xl border-2 transition-all duration-500 group relative overflow-hidden
                           ${isSelected
                             ? 'border-primary bg-primary/[0.03] luxury-shadow scale-[1.02]' 
                             : 'border-border/60 bg-card hover:border-primary/40 hover:bg-muted/[0.02]'}`}
                       >
-                        <div className={`p-6 rounded-full mb-8 transition-all duration-500 ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground group-hover:text-primary group-hover:bg-primary/10'}`}>
-                          <Icon className="w-10 h-10" />
+                        <div className={`p-5 rounded-full mb-5 transition-all duration-500 ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground group-hover:text-primary group-hover:bg-primary/10'}`}>
+                          <Icon className="w-9 h-9" />
                         </div>
-                        <h3 className="text-2xl font-[var(--font-serif)] text-foreground mb-3 tracking-wide">{option.label}</h3>
+                        <h3 className="text-2xl font-[var(--font-serif)] text-foreground mb-2 tracking-wide">{option.label}</h3>
                         <p className="text-muted-foreground font-light text-sm leading-relaxed max-w-[230px]">{option.description}</p>
-                        {point ? (
+                        {pointCount > 0 ? (
                           <p className="mt-6 text-[11px] tracking-[0.18em] uppercase text-primary/80 font-medium">
-                            {point.name}
+                            {pointCount} lieu{pointCount > 1 ? 'x' : ''} disponible{pointCount > 1 ? 's' : ''}
                           </p>
                         ) : (
                           <p className="mt-6 text-[11px] tracking-[0.18em] uppercase text-destructive/80 font-medium">
@@ -389,17 +413,91 @@ const Alterations = () => {
                   initial="initial" 
                   animate="animate" 
                   exit="exit"
-                  className="grid grid-cols-1 sm:grid-cols-2 gap-8"
+                  className="space-y-6"
+                >
+                  <div className="max-w-xl mx-auto text-center space-y-2">
+                    <p className="text-sm text-muted-foreground font-light">
+                      {selectedLocationType === 'atelier'
+                        ? 'Sélectionnez le point atelier où vous déposerez votre pièce.'
+                        : 'Sélectionnez votre entreprise ou point de collecte partenaire.'}
+                    </p>
+                  </div>
+
+                  <div className="max-w-xl mx-auto relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      value={locationSearch}
+                      onChange={(e) => setLocationSearch(e.target.value)}
+                      placeholder="Rechercher un lieu ou une adresse"
+                      className="h-12 rounded-full pl-11 pr-4 bg-muted/[0.03] border-border/60 focus:border-primary/60"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+                    {filteredCollectionPoints.length === 0 ? (
+                      <div className="md:col-span-2 text-center py-12 border-2 border-dashed border-border/40 rounded-3xl">
+                        <p className="text-muted-foreground font-light">
+                          Aucun lieu ne correspond à votre recherche.
+                        </p>
+                      </div>
+                    ) : (
+                      filteredCollectionPoints.map((point) => {
+                        const isSelected = selectedCollectionPointId === point.id;
+
+                        return (
+                          <button
+                            key={point.id}
+                            type="button"
+                            onClick={() => handleCollectionPointSelect(point.id)}
+                            className={`text-left p-5 rounded-2xl border-2 transition-all duration-300 bg-card group relative
+                              ${isSelected
+                                ? 'border-primary bg-primary/[0.03] shadow-sm'
+                                : 'border-border/60 hover:border-primary/40 hover:shadow-md'}`}
+                          >
+                            <div className="flex items-start gap-4">
+                              <div className={`mt-1 p-3 rounded-full transition-colors ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground group-hover:text-primary group-hover:bg-primary/10'}`}>
+                                <MapPin className="w-5 h-5" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h3 className="text-base font-[var(--font-serif)] text-foreground leading-snug">
+                                  {point.name}
+                                </h3>
+                                <p className="mt-2 text-sm text-muted-foreground font-light leading-relaxed">
+                                  {point.address}
+                                </p>
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <div className="absolute top-4 right-4 text-primary">
+                                <Check className="w-5 h-5" />
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
+              {step === 3 && (
+                <motion.div 
+                  key="step3" 
+                  variants={slideVariants} 
+                  initial="initial" 
+                  animate="animate" 
+                  exit="exit"
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-6"
                 >
                   <button
                     onClick={() => handleServiceSelect('Réparation')}
-                    className={`flex flex-col items-center justify-center p-12 text-center rounded-2xl border-2 transition-all duration-500 group relative overflow-hidden
+                    className={`flex flex-col items-center justify-center p-8 md:p-10 text-center rounded-2xl border-2 transition-all duration-500 group relative overflow-hidden
                       ${serviceType === 'Réparation' 
                         ? 'border-primary bg-primary/[0.03] luxury-shadow scale-[1.02]' 
                         : 'border-border/60 bg-card hover:border-primary/40 hover:bg-muted/[0.02]'}`}
                   >
-                    <div className={`p-6 rounded-full mb-8 transition-all duration-500 ${serviceType === 'Réparation' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground group-hover:text-primary group-hover:bg-primary/10'}`}>
-                      <Wrench className="w-10 h-10" />
+                    <div className={`p-5 rounded-full mb-6 transition-all duration-500 ${serviceType === 'Réparation' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground group-hover:text-primary group-hover:bg-primary/10'}`}>
+                      <Wrench className="w-9 h-9" />
                     </div>
                     <h3 className="text-xl font-[var(--font-serif)] text-foreground mb-3 tracking-wide">Réparation</h3>
                     <p className="text-muted-foreground font-light text-sm leading-relaxed max-w-[200px]">Redonnez vie à vos pièces favorites avec nos artisans.</p>
@@ -412,13 +510,13 @@ const Alterations = () => {
 
                   <button
                     onClick={() => handleServiceSelect('Ajustement')}
-                    className={`flex flex-col items-center justify-center p-12 text-center rounded-2xl border-2 transition-all duration-500 group relative overflow-hidden
+                    className={`flex flex-col items-center justify-center p-8 md:p-10 text-center rounded-2xl border-2 transition-all duration-500 group relative overflow-hidden
                       ${serviceType === 'Ajustement' 
                         ? 'border-primary bg-primary/[0.03] luxury-shadow scale-[1.02]' 
                         : 'border-border/60 bg-card hover:border-primary/40 hover:bg-muted/[0.02]'}`}
                   >
-                    <div className={`p-6 rounded-full mb-8 transition-all duration-500 ${serviceType === 'Ajustement' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground group-hover:text-primary group-hover:bg-primary/10'}`}>
-                      <Scissors className="w-10 h-10" />
+                    <div className={`p-5 rounded-full mb-6 transition-all duration-500 ${serviceType === 'Ajustement' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground group-hover:text-primary group-hover:bg-primary/10'}`}>
+                      <Scissors className="w-9 h-9" />
                     </div>
                     <h3 className="text-xl font-[var(--font-serif)] text-foreground mb-3 tracking-wide">Ajustement</h3>
                     <p className="text-muted-foreground font-light text-sm leading-relaxed max-w-[200px]">Le sur-mesure pour une silhouette parfaitement sublimée.</p>
@@ -431,14 +529,14 @@ const Alterations = () => {
                 </motion.div>
               )}
 
-              {step === 3 && (
+              {step === 4 && (
                 <motion.div 
-                  key="step3" 
+                  key="step4" 
                   variants={slideVariants} 
                   initial="initial" 
                   animate="animate" 
                   exit="exit"
-                  className="space-y-10"
+                  className="space-y-8"
                 >
                   {serviceType === 'Ajustement' && (
                     <div className="flex flex-wrap gap-4 justify-center">
@@ -459,7 +557,7 @@ const Alterations = () => {
 
                   <div className="space-y-4 max-w-2xl mx-auto">
                     {serviceType === 'Ajustement' && !selectedCategoryId ? (
-                      <div className="text-center py-20 border-2 border-dashed border-border/40 rounded-3xl">
+                      <div className="text-center py-14 border-2 border-dashed border-border/40 rounded-3xl">
                         <p className="text-muted-foreground font-light italic">
                           Veuillez sélectionner une catégorie pour voir les articles disponibles.
                         </p>
@@ -479,7 +577,7 @@ const Alterations = () => {
                             <div 
                               key={article.id} 
                               onClick={() => handleArticleToggle(article.id)}
-                              className={`flex items-center space-x-6 p-6 bg-card border-2 rounded-2xl transition-all duration-300 cursor-pointer group
+                                  className={`flex items-center space-x-5 p-5 bg-card border-2 rounded-2xl transition-all duration-300 cursor-pointer group
                                 ${selectedArticles.includes(article.id) 
                                   ? 'border-primary bg-primary/[0.02] shadow-sm' 
                                   : 'border-border/60 hover:border-primary/30 hover:shadow-md'}`}
@@ -522,7 +620,7 @@ const Alterations = () => {
                           onChange={(e) => setRepairDescription(e.target.value)}
                           placeholder="Ex: Doublure déchirée, fermeture éclair cassée..."
                           required
-                          className="min-h-[120px] text-sm resize-none bg-muted/[0.03] border-border/60 focus:border-primary/60 transition-all duration-300 rounded-xl p-4 leading-relaxed text-foreground placeholder:text-muted-foreground"
+                          className="min-h-[100px] text-sm resize-none bg-muted/[0.03] border-border/60 focus:border-primary/60 transition-all duration-300 rounded-xl p-4 leading-relaxed text-foreground placeholder:text-muted-foreground"
                         />
                       </div>
 
@@ -531,7 +629,7 @@ const Alterations = () => {
                           Photo de l'article <span className="text-destructive">*</span>
                         </Label>
                         <div className="mt-2">
-                          <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-border/60 rounded-xl cursor-pointer bg-muted/[0.03] hover:bg-muted/[0.05] hover:border-primary/50 transition-all duration-300 overflow-hidden relative group">
+                          <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-border/60 rounded-xl cursor-pointer bg-muted/[0.03] hover:bg-muted/[0.05] hover:border-primary/50 transition-all duration-300 overflow-hidden relative group">
                             {repairPhoto ? (
                               <>
                                 <img src={repairPhoto} alt="Aperçu" className="w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-opacity" />
@@ -561,8 +659,8 @@ const Alterations = () => {
                   
                   <div className="pt-10 flex justify-center">
                     <Button 
-                      className="w-full max-w-md h-16 text-xs tracking-[0.3em] uppercase font-light rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-500 shadow-xl shadow-primary/20 group" 
-                      onClick={handleGoToStep4}
+                      className="w-full max-w-md h-14 text-xs tracking-[0.3em] uppercase font-light rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-500 shadow-xl shadow-primary/20 group" 
+                      onClick={handleGoToContactStep}
                     >
                       Continuer ({selectedArticles.length} article{selectedArticles.length !== 1 ? 's' : ''})
                       <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
@@ -571,9 +669,9 @@ const Alterations = () => {
                 </motion.div>
               )}
 
-              {step === 4 && (
+              {step === 5 && (
                 <motion.div 
-                  key="step4" 
+                  key="step5" 
                   variants={slideVariants} 
                   initial="initial" 
                   animate="animate" 
@@ -652,6 +750,10 @@ const Alterations = () => {
             </AnimatePresence>
           </div>
 
+        </div>
+
+        <div className="w-full max-w-4xl mt-8">
+          <StandaloneMeasurementGuide />
         </div>
       </div>
     </>
