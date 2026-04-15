@@ -79,7 +79,7 @@ const CollectionPointForm = ({ initialData, onSubmit, onCancel, isLoading }) => 
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="atelier">Atelier</SelectItem>
-            <SelectItem value="bureau">Bureau</SelectItem>
+            <SelectItem value="bureau">Entreprise</SelectItem>
           </SelectContent>
         </Select>
       </div>

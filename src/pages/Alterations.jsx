@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Check, Loader2, MapPin, Wrench, Scissors, ChevronRight, UploadCloud, Image as ImageIcon, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, Building2, Check, Home, Loader2, Wrench, Scissors, ChevronRight, UploadCloud, Image as ImageIcon, ShoppingCart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchAlterationCatalog, filterCatalogByType } from '@/services/backendApi';
 
@@ -21,6 +21,7 @@ const Alterations = () => {
 
   // Navigation & Selections
   const [step, setStep] = useState(1);
+  const [selectedLocationType, setSelectedLocationType] = useState('');
   const [selectedCollectionPointId, setSelectedCollectionPointId] = useState('');
   const [serviceType, setServiceType] = useState('');
   
@@ -98,8 +99,39 @@ const Alterations = () => {
     fetchArticlesForType();
   }, [categories, serviceType, toast]);
 
-  const handleCollectionPointSelect = (pointId) => {
-    setSelectedCollectionPointId(pointId);
+  const locationTypeOptions = [
+    {
+      value: 'atelier',
+      label: 'Atelier',
+      description: 'Déposez votre pièce directement auprès de l’atelier.',
+      icon: Home
+    },
+    {
+      value: 'bureau',
+      label: 'Entreprise',
+      description: 'Passez par un point de collecte partenaire en entreprise.',
+      icon: Building2
+    }
+  ];
+
+  const getCollectionPointForType = (locationType) => (
+    collectionPoints.find((point) => point.location_type === locationType)
+  );
+
+  const handleLocationTypeSelect = (locationType) => {
+    const point = getCollectionPointForType(locationType);
+
+    if (!point) {
+      toast({
+        variant: 'destructive',
+        title: 'Aucun point disponible',
+        description: 'Aucun point de collecte n’est encore configuré pour ce choix.'
+      });
+      return;
+    }
+
+    setSelectedLocationType(locationType);
+    setSelectedCollectionPointId(point.id);
     setTimeout(() => setStep(2), 300);
   };
 
@@ -184,6 +216,8 @@ const Alterations = () => {
         type: serviceType,
         collectionPointId: selectedCollectionPointId, 
         collection_point_id: selectedCollectionPointId, 
+        collectionPointType: selectedLocationType,
+        locationType: locationTypeOptions.find((option) => option.value === selectedLocationType)?.label || '',
         clientInfo: {
           firstName: formData.name,
           lastName: '',
@@ -206,6 +240,7 @@ const Alterations = () => {
       await addArticle(cartItem);
       
       setStep(1);
+      setSelectedLocationType('');
       setSelectedCollectionPointId('');
       setServiceType('');
       setSelectedCategoryId('');
@@ -271,7 +306,7 @@ const Alterations = () => {
             )}
             <div className="w-full text-center px-12">
               <h1 className="text-lg md:text-xl lg:text-2xl font-[var(--font-serif)] font-[var(--font-serif-weight)] text-foreground leading-tight tracking-[0.02em]">
-                {step === 1 && 'Choisissez votre point de collecte'}
+                {step === 1 && 'Choisissez votre mode de dépôt'}
                 {step === 2 && 'De quel service avez-vous besoin ?'}
                 {step === 3 && 'Sélectionnez vos articles'}
                 {step === 4 && 'Vos coordonnées'}
@@ -308,33 +343,42 @@ const Alterations = () => {
                   exit="exit"
                   className="grid grid-cols-1 sm:grid-cols-2 gap-6"
                 >
-                  {collectionPoints.length === 0 ? (
-                    <div className="col-span-1 sm:col-span-2 text-center py-12">
-                      <p className="text-muted-foreground">Aucun point de collecte disponible pour le moment.</p>
-                    </div>
-                  ) : (
-                    collectionPoints.map((point) => (
+                  {locationTypeOptions.map((option) => {
+                    const Icon = option.icon;
+                    const point = getCollectionPointForType(option.value);
+                    const isSelected = selectedLocationType === option.value;
+
+                    return (
                       <button
-                        key={point.id}
-                        onClick={() => handleCollectionPointSelect(point.id)}
-                        className={`flex flex-col items-start justify-center p-8 text-left rounded-2xl border-2 transition-all duration-500 group relative overflow-hidden
-                          ${selectedCollectionPointId === point.id 
+                        key={option.value}
+                        onClick={() => handleLocationTypeSelect(option.value)}
+                        className={`flex flex-col items-center justify-center p-10 text-center rounded-2xl border-2 transition-all duration-500 group relative overflow-hidden
+                          ${isSelected
                             ? 'border-primary bg-primary/[0.03] luxury-shadow scale-[1.02]' 
                             : 'border-border/60 bg-card hover:border-primary/40 hover:bg-muted/[0.02]'}`}
                       >
-                        <div className={`p-4 rounded-full mb-6 transition-all duration-500 ${selectedCollectionPointId === point.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground group-hover:text-primary group-hover:bg-primary/10'}`}>
-                          <MapPin className="w-6 h-6" />
+                        <div className={`p-6 rounded-full mb-8 transition-all duration-500 ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground group-hover:text-primary group-hover:bg-primary/10'}`}>
+                          <Icon className="w-10 h-10" />
                         </div>
-                        <h3 className="text-lg font-[var(--font-serif)] text-foreground mb-2 tracking-wide">{point.name}</h3>
-                        <p className="text-muted-foreground font-light text-sm leading-relaxed">{point.address}</p>
-                        {selectedCollectionPointId === point.id && (
+                        <h3 className="text-2xl font-[var(--font-serif)] text-foreground mb-3 tracking-wide">{option.label}</h3>
+                        <p className="text-muted-foreground font-light text-sm leading-relaxed max-w-[230px]">{option.description}</p>
+                        {point ? (
+                          <p className="mt-6 text-[11px] tracking-[0.18em] uppercase text-primary/80 font-medium">
+                            {point.name}
+                          </p>
+                        ) : (
+                          <p className="mt-6 text-[11px] tracking-[0.18em] uppercase text-destructive/80 font-medium">
+                            Indisponible
+                          </p>
+                        )}
+                        {isSelected && (
                           <div className="absolute top-4 right-4 text-primary">
                             <Check className="w-5 h-5" />
                           </div>
                         )}
                       </button>
-                    ))
-                  )}
+                    );
+                  })}
                 </motion.div>
               )}
 

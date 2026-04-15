@@ -372,7 +372,7 @@ const AdminDashboard = () => {
                     <td className="px-6 py-4 text-gray-600">{point.address}</td>
                     <td className="px-6 py-4">
                       <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs font-medium border border-gray-200">
-                        {point.location_type || 'Non spécifié'}
+                        {point.location_type === 'atelier' ? 'Atelier' : point.location_type === 'bureau' ? 'Entreprise' : 'Non spécifié'}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
