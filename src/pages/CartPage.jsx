@@ -14,15 +14,28 @@ import {
   MapPin, User, CheckCircle2, Package, Scissors
 } from 'lucide-react';
 
+const compressImage = (base64DataUrl, maxWidth = 1500, quality = 0.82) =>
+  new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxWidth / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = base64DataUrl;
+  });
+
 const uploadPhotoToSupabase = async (base64DataUrl) => {
   if (!base64DataUrl) return null;
-  const matches = base64DataUrl.match(/^data:image\/([a-z]+);base64,/);
-  const extension = matches ? matches[1] : 'jpg';
+  const compressed = await compressImage(base64DataUrl);
   const backendUrl = (import.meta.env.VITE_BACKEND_API_URL || 'https://ateliercalista.store').replace(/\/api$/, '');
   const response = await fetch(`${backendUrl}/api/upload-photo`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ photo: base64DataUrl, extension }),
+    body: JSON.stringify({ photo: compressed, extension: 'jpg' }),
   });
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
