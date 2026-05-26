@@ -9,7 +9,6 @@ import { formatCurrency } from '@/api/EcommerceApi';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { createCheckoutSession } from '@/services/checkoutService';
-import { supabase } from '@/lib/customSupabaseClient';
 import {
   ShoppingCart, Trash2, Loader2, ArrowLeft, Plus, Minus,
   MapPin, User, CheckCircle2, Package, Scissors
@@ -17,15 +16,20 @@ import {
 
 const uploadPhotoToSupabase = async (base64DataUrl) => {
   if (!base64DataUrl) return null;
-  const res = await fetch(base64DataUrl);
-  const blob = await res.blob();
-  const ext = blob.type.split('/')[1] || 'jpg';
-  const tempName = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-  const { data, error } = await supabase.storage
-    .from('repair-photos')
-    .upload(tempName, blob, { contentType: blob.type, upsert: false });
-  if (error) throw new Error(`Upload photo échoué : ${error.message}`);
-  return data.path; // ex: "temp-1234567890-abc123.jpg"
+  const matches = base64DataUrl.match(/^data:image\/([a-z]+);base64,/);
+  const extension = matches ? matches[1] : 'jpg';
+  const backendUrl = (import.meta.env.VITE_BACKEND_API_URL || 'https://ateliercalista.store').replace(/\/api$/, '');
+  const response = await fetch(`${backendUrl}/api/upload-photo`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ photo: base64DataUrl, extension }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || 'Upload photo échoué');
+  }
+  const { path } = await response.json();
+  return path;
 };
 
 const CartPage = () => {
