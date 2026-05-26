@@ -31,11 +31,18 @@ const compressImage = (base64DataUrl, maxWidth = 1500, quality = 0.82) =>
 const uploadPhotoToSupabase = async (base64DataUrl) => {
   if (!base64DataUrl) return null;
   const compressed = await compressImage(base64DataUrl);
+
+  // Convert base64 to binary buffer (no JSON, no base64 overhead)
+  const base64Data = compressed.split(',')[1];
+  const byteChars = atob(base64Data);
+  const byteArray = new Uint8Array(byteChars.length);
+  for (let i = 0; i < byteChars.length; i++) byteArray[i] = byteChars.charCodeAt(i);
+
   const backendUrl = (import.meta.env.VITE_BACKEND_API_URL || 'https://ateliercalista.store').replace(/\/api$/, '');
   const response = await fetch(`${backendUrl}/api/upload-photo`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ photo: compressed, extension: 'jpg' }),
+    headers: { 'Content-Type': 'image/jpeg' },
+    body: byteArray,
   });
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
