@@ -89,8 +89,8 @@ const CartPage = () => {
       return;
     }
 
-    if (!finalPayload.clientName || typeof finalPayload.clientName !== 'string' || finalPayload.clientName.trim() === '') {
-      toast({ variant: "destructive", title: "Nom manquant", description: "Le nom complet du client est requis." });
+    if (!finalPayload.clientName || typeof finalPayload.clientName !== 'string' || finalPayload.clientName.trim().length < 2) {
+      toast({ variant: "destructive", title: "Nom invalide", description: "Le nom complet doit contenir au moins 2 caractères." });
       return;
     }
 
