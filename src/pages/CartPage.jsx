@@ -9,10 +9,24 @@ import { formatCurrency } from '@/api/EcommerceApi';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { createCheckoutSession } from '@/services/checkoutService';
-import { 
-  ShoppingCart, Trash2, Loader2, ArrowLeft, Plus, Minus, 
+import { supabase } from '@/lib/customSupabaseClient';
+import {
+  ShoppingCart, Trash2, Loader2, ArrowLeft, Plus, Minus,
   MapPin, User, CheckCircle2, Package, Scissors
 } from 'lucide-react';
+
+const uploadPhotoToSupabase = async (base64DataUrl) => {
+  if (!base64DataUrl) return null;
+  const res = await fetch(base64DataUrl);
+  const blob = await res.blob();
+  const ext = blob.type.split('/')[1] || 'jpg';
+  const tempName = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { data, error } = await supabase.storage
+    .from('repair-photos')
+    .upload(tempName, blob, { contentType: blob.type, upsert: false });
+  if (error) throw new Error(`Upload photo échoué : ${error.message}`);
+  return data.path; // ex: "temp-1234567890-abc123.jpg"
+};
 
 const CartPage = () => {
   const { toast } = useToast();
@@ -53,9 +67,8 @@ const CartPage = () => {
   };
 
   const handleCheckout = async () => {
-    const derivedPhoto = alterationItems.find(item => item.photo)?.photo || null;
-    const selectedCollectionPoint = alterationItems.find(item => item.collectionPointId)?.collectionPointId || 
-                                    alterationItems.find(item => item.collectionPoint?.id)?.collectionPoint?.id || 
+    const selectedCollectionPoint = alterationItems.find(item => item.collectionPointId)?.collectionPointId ||
+                                    alterationItems.find(item => item.collectionPoint?.id)?.collectionPoint?.id ||
                                     alterationItems.find(item => item.collection_point_id)?.collection_point_id ||
                                     '';
 
@@ -64,8 +77,7 @@ const CartPage = () => {
       derivedEmail,
       productItems,
       alterationItems,
-      selectedCollectionPoint,
-      derivedPhoto
+      selectedCollectionPoint
     );
 
     if (!finalPayload.clientEmail || typeof finalPayload.clientEmail !== 'string' || finalPayload.clientEmail.trim() === '') {
@@ -97,8 +109,17 @@ const CartPage = () => {
     setIsLoading(true);
 
     try {
+      // Upload photo vers Supabase Storage si présente (réparation)
+      // On envoie seulement le chemin temp au backend — jamais le base64
+      const rawPhoto = alterationItems.find(item => item.photo)?.photo || null;
+      let clientPhotoPath = null;
+      if (rawPhoto) {
+        clientPhotoPath = await uploadPhotoToSupabase(rawPhoto);
+      }
+
       const json = await createCheckoutSession({
         ...finalPayload,
+        clientPhotoPath,
         successUrl: `${window.location.origin}/success`,
         cancelUrl: window.location.href,
       });

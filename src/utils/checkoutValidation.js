@@ -41,7 +41,7 @@ export const validateItems = (items) => {
  * Formats the checkout payload strictly matching backend expectations.
  * Ensures all articles have prices and quantities properly populated.
  */
-export const formatCheckoutPayload = (clientName, clientEmail, productItems = [], alterationItems = [], collectionPoint, clientPhoto) => {
+export const formatCheckoutPayload = (clientName, clientEmail, productItems = [], alterationItems = [], collectionPoint) => {
   const items = formatCheckoutItems(productItems, alterationItems);
 
   const payload = {
@@ -49,7 +49,6 @@ export const formatCheckoutPayload = (clientName, clientEmail, productItems = []
     clientEmail: clientEmail?.trim() || '',
     items: items || [],
     collectionPoint: collectionPoint || '',
-    clientPhoto: clientPhoto || null
   };
 
   return payload;
